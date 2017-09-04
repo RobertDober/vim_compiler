@@ -37,4 +37,21 @@ defmodule Test.VimCompiler.Helpers.Parser.ParseComplexExpressionTest do
       assert subparam == %Ast.Number{value: 2}
     end
   end
+
+  describe "Complex" do 
+    @complex """
+    f (1 + 2 * 3) g
+    """
+    test "complex" do
+      {:ok,
+        %VimCompiler.Ast.Invocation{fn: "f",
+           params: params}, []} = parse(@complex)
+
+      [
+        %VimCompiler.Ast.Term{lhs: %VimCompiler.Ast.Number{value: 1}, op: :+,
+                              rhs: %VimCompiler.Ast.Factor{lhs: %VimCompiler.Ast.Number{value: 2}, op: :*,
+                                                           rhs: %VimCompiler.Ast.Number{value: 3}}},
+        %VimCompiler.Ast.Name{text: "g"}] = params
+    end
+  end
 end
