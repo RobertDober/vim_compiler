@@ -2,11 +2,12 @@ defmodule VimCompiler.Helpers.Parser.ParseSimpleExpressionTest do
   use ExUnit.Case
 
   alias VimCompiler.Ast
-  import VimCompiler.Parser, only: [parse: 1]
+  import VimCompiler.Parser, only: [parse_expression: 1]
+  import VimCompiler.Helpers.LeexHelpers, only: [tokenize: 2]
   
   describe "Illegal" do 
     test "missing )" do 
-      {:error, message, rest} = parse("( 42")
+      {:error, message, _} = parse("( 42")
       assert message == "Missing )"
     end
   end
@@ -40,5 +41,10 @@ defmodule VimCompiler.Helpers.Parser.ParseSimpleExpressionTest do
       assert params == [%Ast.Number{value: 43}, %Ast.Number{value: 44}]
       assert [] == rest
     end
+  end
+  defp parse(str) do
+    str
+      |> tokenize(with: :lexer)
+      |> parse_expression()
   end
 end

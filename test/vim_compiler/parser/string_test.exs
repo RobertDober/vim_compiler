@@ -2,7 +2,8 @@ defmodule VimCompiler.Parser.StringTest do
   use ExUnit.Case
   
   alias VimCompiler.Ast
-  import VimCompiler.Parser, only: [parse: 1]
+  import VimCompiler.Parser, only: [parse_expression: 1]
+  import VimCompiler.Helpers.LeexHelpers, only: [tokenize: 2]
   
   describe "Strings" do
     @empty """
@@ -41,5 +42,10 @@ defmodule VimCompiler.Parser.StringTest do
       assert %Ast.Number{value: 2} == lhs
       assert %Ast.Number{value: 40} == rhs
     end
+  end
+  defp parse(str) do
+    str
+      |> tokenize(with: :lexer)
+      |> parse_expression()
   end
 end

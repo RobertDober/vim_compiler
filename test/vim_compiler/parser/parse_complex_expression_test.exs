@@ -2,7 +2,8 @@ defmodule VimCompiler.Helpers.Parser.ParseComplexExpressionTest do
   use ExUnit.Case
 
   alias VimCompiler.Ast
-  import VimCompiler.Parser, only: [parse: 1]
+  import VimCompiler.Parser, only: [parse_expression: 1]
+  import VimCompiler.Helpers.LeexHelpers, only: [tokenize: 2]
   
   describe "Infix" do 
     @term """
@@ -53,5 +54,11 @@ defmodule VimCompiler.Helpers.Parser.ParseComplexExpressionTest do
                                                            rhs: %VimCompiler.Ast.Number{value: 3}}},
         %VimCompiler.Ast.Name{text: "g"}] = params
     end
+  end
+
+  defp parse(str) do
+    str
+      |> tokenize(with: :lexer)
+      |> parse_expression()
   end
 end

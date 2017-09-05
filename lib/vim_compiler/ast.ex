@@ -24,6 +24,18 @@ defmodule VimCompiler.Ast do
   # ==================
   #   Constructs
   #   ----------
+  defmodule Definition do
+    @moduledoc """
+    Represents a function definition with its name, privacy and all bodies
+    """
+    defstruct name: "name", private: false, bodies: []
+  end
+  defmodule Body do
+    @moduledoc """
+    Represents a definition body with its paramater patterns and the code
+    """
+    defstruct patterns: [], code: %Node{}
+  end
   defmodule Invocation do
     @moduledoc """
     A Function Invocation represented by the function name and the actual parameters.

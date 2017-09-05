@@ -2,7 +2,8 @@ defmodule VimCompiler.Parser.PrimaryTest do
   use ExUnit.Case
   
   alias VimCompiler.Ast
-  import VimCompiler.Parser, only: [parse: 1]
+  import VimCompiler.Parser, only: [parse_expression: 1]
+  import VimCompiler.Helpers.LeexHelpers, only: [tokenize: 2]
   
   describe "Numbers" do
     @simple1 """
@@ -22,4 +23,9 @@ defmodule VimCompiler.Parser.PrimaryTest do
     end
   end
 
+  defp parse(str) do
+    str
+      |> tokenize(with: :lexer)
+      |> parse_expression()
+  end
 end

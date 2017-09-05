@@ -6,14 +6,14 @@ defmodule VimCompiler.Parser.ObjectLiteralsTest do
   
   describe "Lists" do 
     test "empty" do 
-      assert {:ok, %Ast.List{elements: []}, []} == parse("[]")
+      assert {:ok, [%Ast.List{elements: []}]} == parse("[]")
     end
 
     @singleton """
     [ 42 ]
     """
     test "singleton" do
-      {:ok, %Ast.List{elements: [first]}, []} = parse(@singleton)
+      {:ok, [%Ast.List{elements: [first]}]} = parse(@singleton)
       assert %Ast.Number{value: 42} == first
     end
 
@@ -21,7 +21,7 @@ defmodule VimCompiler.Parser.ObjectLiteralsTest do
     [ "alpha", 2 + 3, (f 1) ]
     """
     test "many" do
-      {:ok, %Ast.List{elements: [first, second, third]}, []} = parse(@many)
+      {:ok, [ %Ast.List{elements: [first, second, third]}]} = parse(@many)
 
       assert %Ast.String{parts: ["alpha"]} == first
       %Ast.Term{lhs: lhs, rhs: _, op: :+} = second

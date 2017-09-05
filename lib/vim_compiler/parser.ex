@@ -3,11 +3,24 @@ defmodule VimCompiler.Parser do
   import VimCompiler.Helpers.LeexHelpers, only: [tokenize: 2]
 
   def parse(str) do
-    with tokens <- tokenize(str, with: :lexer) do
-      parse_expression(skip_ws(tokens))
+    with tokens <- skip_ws(tokenize(str, with: :lexer)) do
+      parse(tokens, [])
+    end
+  end
+  def parse([], result), do: {:ok, Enum.reverse(result)}
+  def parse([{:kw_def, _, deftype}|_] = tokens, result) do
+    with {:ok, definition, rest} <- parse_definition(deftype, skip_ws(tokens)) do
+      parse(skip_ws(rest), [definition|result])
+    end
+  end
+  def parse(tokens, result) do
+    with {:ok, expression, rest} <- parse_expression(skip_ws(tokens)) do
+      parse(skip_ws(rest), [expression|result])
     end
   end
 
+  def parse_definition(deftype, tokens) do
+  end
   def parse_expression([]) do
     { :ok, %Ast.EOF{}, [] }
   end
