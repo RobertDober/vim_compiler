@@ -1,4 +1,4 @@
-defmodule Test.VimCompiler.Helpers.Parser.ParseComplexExpressionTest do
+defmodule VimCompiler.Helpers.Parser.ParseComplexExpressionTest do
   use ExUnit.Case
 
   alias VimCompiler.Ast

@@ -1,4 +1,4 @@
-defmodule Test.VimCompiler.Helpers.Parser.ParseSimpleExpressionTest do
+defmodule VimCompiler.Helpers.Parser.ParseSimpleExpressionTest do
   use ExUnit.Case
 
   alias VimCompiler.Ast
@@ -11,23 +11,6 @@ defmodule Test.VimCompiler.Helpers.Parser.ParseSimpleExpressionTest do
     end
   end
 
-  describe "Literals" do
-    @simple1 """
-    42
-    """
-    test "literal 42" do 
-      {:ok, %Ast.Number{value: 42}, rest} = parse(@simple1)
-      assert [] == rest
-    end
-
-    @simple2 """
-    ( 42 )
-    """
-    test "literal (42)" do 
-      {:ok, %Ast.Number{value: 42}, rest} = parse(@simple2)
-      assert [] == rest
-    end
-  end
 
   describe "Invocations" do
 

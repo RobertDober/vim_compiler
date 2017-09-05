@@ -13,7 +13,7 @@ defmodule Test.VimCompiler.Helpers.LexerTest do
       assert hd(tokens) == {:kw_def, 1, "def"}
     end
     test "more defs" do 
-      tokens = scan("defp\ndefp def")
+      tokens = scan("defp\ndefp def", &filter/1)
       assert tokens == [{:kw_def, 1, "defp"}, {:kw_def, 2, "defp"}, {:kw_def, 2, "def"}]
     end
   end
@@ -38,7 +38,7 @@ defmodule Test.VimCompiler.Helpers.LexerTest do
       42
     """
     test "can be scanned" do 
-      tokens = scan(@multi)
+      tokens = scan(@multi, &filter/1)
       assert tokens == [{:kw_def, 1, "def"}, {:name, 1, "hello"}, {:lt_number, 2, 42}]
     end
   end

@@ -2,7 +2,8 @@ defmodule Test.VimCompiler.Helpers.AllLexerTokensTest do
   use ExUnit.Case
 
   import VimCompiler.Helpers.LeexHelpers, only: [tokenize: 2]
-
+  #  from a b to {"a", :b},
+  # ^i{"ea"ebhhi,lli:A},j
   [
     {"+", :op6},
     {"-", :op6},
@@ -11,6 +12,8 @@ defmodule Test.VimCompiler.Helpers.AllLexerTokensTest do
     {"//", :op9},
     {"defp", :kw_def},
     {"def", :kw_def},
+    {"do", :kw_do},
+    {"end", :kw_end},
     {"==", :op2},
     {"=", :sy_assigns},
     {"(", :sy_lparen},
@@ -20,7 +23,17 @@ defmodule Test.VimCompiler.Helpers.AllLexerTokensTest do
     {"[", :sy_lbrack},
     {"]", :sy_rbrack},
     {32, :lt_number},
-    {"hello", :name}
+    {"hello", :name},
+    {"hello'", :name},
+    {"do'", :name},
+    {"hello''", :name},
+    {"\"", :sy_quote},
+    {"\\", :escape},
+    {" ", :ws},
+    {"  ", :ws},
+    {" \n ", :ws},
+    {"#", :sy_hash},
+    {"\#{", :sy_hashacc},
 
   ] |> Enum.each( fn {str, token} ->
    test( "#{token} for " <> inspect(str) ) do
