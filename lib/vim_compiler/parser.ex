@@ -4,13 +4,15 @@ defmodule VimCompiler.Parser do
 
   def parse(str) do
     with tokens <- skip_ws(tokenize(str, with: :lexer)) do
-      parse(tokens, [])
+      parse(tokens, %Ast.Tree{})
     end
   end
-  def parse([], result), do: {:ok, Enum.reverse(result)}
-  def parse([{:kw_def, _, deftype}|_] = tokens, result) do
-    with {:ok, definition, rest} <- parse_definition(deftype, skip_ws(tokens)) do
-      parse(skip_ws(rest), [definition|result])
+  def parse([], result_tree) do
+    {:ok, Ast.Tree.finalize(result_tree)}
+  end
+  def parse([{:kw_def, _, deftype}|tokens], result_tree) do
+    with {:ok, result_tree1, rest} <- parse_definition(deftype, skip_ws(tokens), result_tree) do
+      parse(skip_ws(rest), result_tree1)
     end
   end
   def parse(tokens, result) do
@@ -19,8 +21,34 @@ defmodule VimCompiler.Parser do
     end
   end
 
-  def parse_definition(deftype, tokens) do
+  def parse_definition(deftype, [{:name, _, name}|rest], result_tree) do
+    with {:ok, param_patterns, rest1} <- parse_param_patterns(skip_ws(rest), []) do
+      # looking at kw_do or sy_assigns here:
+       with {:ok, code, rest2} <- parse_definition_body(rest1,[]) do
+         {:ok, Ast.Tree.add_definition(result_tree, name, deftype == "defp", param_patterns, code), rest2}
+       end
+    end
   end
+  def parse_definition(deftype, tokens, _) do
+    {:error, "Illegal name after #{deftype}", tokens}
+  end
+
+  def parse_definition_body([{:sy_assigns,_,_}|body], _), do: parse_expression(body)
+  def parse_definition_body([{:kw_end,_,_}|rest], result), do: {:ok, Enum.reverse(result), rest}
+  def parse_definition_body([{:kw_do,_,_}|body], result) do
+  end
+
+  @doc """
+        (Pattern ("," Pattern)*)?
+     with follow: { kw_do, sy_assigns }
+     For now: Pattern == Primary
+  """
+  def parse_param_patterns(tokens = [{:sy_assigns, _, _}|_], result), do: {:ok, Enum.reverse(result), tokens}
+  def parse_param_patterns(tokens = [{:kw_do, _, _}|_], result), do: {:ok, Enum.reverse(result), tokens}
+  def parse_param_patterns(tokens, result) do
+    with {:ok, pattern, rest} <- parse_pattern(tokens), do: parse_param_patterns(skip_ws(rest), [pattern|result])
+  end
+
   def parse_expression([]) do
     { :ok, %Ast.EOF{}, [] }
   end
@@ -28,7 +56,7 @@ defmodule VimCompiler.Parser do
     {:ok, %Ast.Invocation{fn: name}, []}
   end
   def parse_expression(ts=[{:name, _, _} | [ t1 | rest]]) do
-    parse_expression_prime(t1, ts) 
+    parse_expression_prime(t1, ts)
   end
   def parse_expression(tokens), do: parse_term(skip_ws(tokens))
 
@@ -39,7 +67,7 @@ defmodule VimCompiler.Parser do
       {:ok, %Ast.Invocation{fn: name, params: params}, rest1}
     end
   end
-  
+
   def parse_params(tokens, params) do
     if end_of_params?(tokens) do
       {:ok, Enum.reverse(params), tokens}
@@ -95,6 +123,9 @@ defmodule VimCompiler.Parser do
       end
     end
   end
+
+  # For now:
+  def parse_pattern(tokens), do: parse_primary(tokens)
 
   def parse_list([{:sy_rbrack,_,_}|rest], result), do: {:ok, Enum.reverse(result), skip_ws(rest)}
   def parse_list(tokens, result) do

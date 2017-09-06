@@ -1,14 +1,5 @@
 defmodule VimCompiler.Ast do
-  
-  
-  # Top Level
-  # =========
-  defmodule Tree do
-    @moduledoc """
-    Top Level AST node, is not present in any child node
-    """
-    defstruct children: []
-  end
+
 
   # Special Node
   # ============
@@ -34,7 +25,7 @@ defmodule VimCompiler.Ast do
     @moduledoc """
     Represents a definition body with its paramater patterns and the code
     """
-    defstruct patterns: [], code: %Node{}
+    defstruct patterns: [], code: []
   end
   defmodule Invocation do
     @moduledoc """
@@ -56,7 +47,7 @@ defmodule VimCompiler.Ast do
     """
     defstruct lhs: %Node{}, rhs: %Node{}, op: :*
   end
-  
+
   #   Literals
   #   --------
   defmodule String do
@@ -79,9 +70,36 @@ defmodule VimCompiler.Ast do
   defmodule EOF, do: defstruct dummy: nil
   defmodule Number, do: defstruct value: 0
   defmodule Name, do: defstruct text: ""
-  defmodule SimpleString, do: defstruct text: ""
 
-  def add_to_children(%{children: children} = node, child) do 
-    %{node | children: [child|children]}
+  # Top Level
+  # =========
+  defmodule Tree do
+    @moduledoc """
+    Top Level AST node, is not present in any child node
+
+    env is a map that maps a defintion's name to all its bodies
+
+        %{"sum" => [%Body{}, ...]}
+
+    defined_names is a list of the names defined in their actual reversed order
+    """
+    defstruct env: %{}, defined_names: []
+
+    @doc """
+    Adds body or creates first entry with that body to definition to env
+    """
+    def add_definition(tree, name, private, patterns, code) when is_list(code) do
+      definition = Map.get(tree.env, name, %VimCompiler.Ast.Definition{name: name, private: private})
+      body       =  %Body{patterns: patterns, code: code}
+      %{tree |
+         env: Map.put(tree.env, name, %{definition | bodies: [body|definition.bodies]}),
+         defined_names: [name | tree.defined_names]}
+    end
+    def add_definition(tree, name, private, patterns, code), do: add_definition(tree, name, private, patterns, [code])
+
+    def finalize(self) do
+      %{self | defined_names: Enum.reverse(self.defined_names)}
+    end
   end
+
 end
