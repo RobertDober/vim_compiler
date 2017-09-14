@@ -3,6 +3,21 @@ defmodule Test.VimCompiler.Helpers.LexerTest do
 
   import VimCompiler.Helpers.LeexHelpers, only: [tokenize: 2]
 
+  describe "names and symbols" do 
+    test "names" do 
+      tokens = scan("hello world", &filter/1)
+      assert tokens == [{:name, 1, "hello"}, {:name, 1, "world"}]
+    end
+    test "symbols" do 
+      tokens = scan(":hello :world", &filter/1)
+      assert tokens == [{:symbol, 1, "hello"}, {:symbol, 1, "world"}]
+    end
+    test "a mix" do 
+      tokens = scan(":hello def world :foo", &filter/1)
+      assert tokens == [{:symbol, 1, "hello"}, {:kw_def, 1, "def"}, {:name, 1, "world"}, {:symbol, 1, "foo"}]
+    end
+  end
+
   describe "tokenize def and defp" do 
     test "one defp" do
       tokens = scan("defp")

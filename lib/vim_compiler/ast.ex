@@ -27,6 +27,15 @@ defmodule VimCompiler.Ast do
     """
     defstruct patterns: [], code: []
   end
+  defmodule Assignment do
+    @moduledoc """
+    An assignment to a name
+         <name> = <ast of value>
+
+    name is a string, but value is an Ast.Node
+    """
+    defstruct name: "the name", value: nil
+  end
   defmodule Invocation do
     @moduledoc """
     A Function Invocation represented by the function name and the actual parameters.

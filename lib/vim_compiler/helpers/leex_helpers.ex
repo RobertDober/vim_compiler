@@ -17,8 +17,13 @@ defmodule VimCompiler.Helpers.LeexHelpers do
     |> to_charlist()
     |> lexer.string()
     elixirize_tokens(tokens,[])
-    |> Enum.reverse()
+    |> compose([])
   end
+
+
+  defp compose([], result), do: result
+  defp compose([{:name, line, name}, {:sy_colon, line, _} | rest], result), do: compose(rest, [{:symbol, line, name}|result])
+  defp compose([token|rest], result), do: compose(rest, [token | result])
 
   defp elixirize_tokens(tokens, rest)
   defp elixirize_tokens([], result), do: result

@@ -31,6 +31,7 @@ SY_HASHACC = #\{
 SY_QUOTE   = "
 SY_RBRACK  = \]
 SY_COMMA   = ,
+SY_COLON   = :
 
 ESCAPE   = \\
 
@@ -39,7 +40,7 @@ INNER_ID = [a-zA-Z_0-9']
 NAME     = {LETTER}{INNER_ID}*
 
 DIGIT    = [0-9]
-NUMBER   = {DIGIT}+
+NUMBER   = [-+]?{DIGIT}+
 
 
 WS       = [\n\s]+
@@ -47,15 +48,19 @@ ANY      = [^\s]\\"'()[\s]+
 
 Rules.
 
-{KW_DEF}   : {token, {kw_def, TokenLine, TokenChars}}.
-{KW_DO}    : {token, {kw_do, TokenLine, TokenChars}}.
-{KW_END}   : {token, {kw_end, TokenLine, TokenChars}}.
+{KW_DEF}     : {token, {kw_def, TokenLine, TokenChars}}.
+{KW_DO}      : {token, {kw_do, TokenLine, TokenChars}}.
+{KW_END}     : {token, {kw_end, TokenLine, TokenChars}}.
 
-{OP_PLUS}  : {token, {op6, TokenLine, TokenChars}}.
-{OP_MINUS} : {token, {op6, TokenLine, TokenChars}}.
-{OP_MULT}  : {token, {op9, TokenLine, TokenChars}}.
-{OP_DDIV}  : {token, {op9, TokenLine, TokenChars}}.
-{OP_DIV}   : {token, {op9, TokenLine, TokenChars}}.
+{NAME}       : {token, {name, TokenLine, TokenChars}}.
+
+{NUMBER}     : {token, {lt_number, TokenLine, make_number(TokenChars, 0, 1)}}.
+
+{OP_PLUS}    : {token, {op6, TokenLine, TokenChars}}.
+{OP_MINUS}   : {token, {op6, TokenLine, TokenChars}}.
+{OP_MULT}    : {token, {op9, TokenLine, TokenChars}}.
+{OP_DDIV}    : {token, {op9, TokenLine, TokenChars}}.
+{OP_DIV}     : {token, {op9, TokenLine, TokenChars}}.
 
 {SY_ASSIGNS} : {token, {sy_assigns, TokenLine, TokenChars}}.
 {SY_EQUALS}  : {token, {op2, TokenLine, TokenChars}}.
@@ -69,17 +74,17 @@ Rules.
 {SY_HASHACC} : {token, {sy_hashacc, TokenLine, TokenChars}}.
 {SY_QUOTE}   : {token, {sy_quote, TokenLine, TokenChars}}.
 {SY_COMMA}   : {token, {sy_comma, TokenLine, TokenChars}}.
+{SY_COLON}   : {token, {sy_colon, TokenLine, TokenChars}}.
 
 {ESCAPE}     : {token, {escape, TokenLine, TokenChars}}.
 
-{NAME}     : {token, {name, TokenLine, TokenChars}}.
 
-{NUMBER} : {token, {lt_number, TokenLine, make_number(TokenChars, 0)}}.
-
-{WS}       : {token, {ws, TokenLine, TokenChars}}.
-{ANY}      : {token, {anything, TokenLine, TokenChars}}.
+{WS}         : {token, {ws, TokenLine, TokenChars}}.
+{ANY}        : {token, {anything, TokenLine, TokenChars}}.
 
 Erlang code.
 
-make_number([], N) -> N;
-make_number([Head | Tail], N) -> make_number(Tail, 10*N + Head - $0).
+make_number([], N, S) -> N * S;
+make_number([$+ | Tail], N, _) -> make_number(Tail, N, 1);
+make_number([$- | Tail], N, _) -> make_number(Tail, N, -1);
+make_number([Head | Tail], N, S)  -> make_number(Tail, 10*N + Head - $0, S).

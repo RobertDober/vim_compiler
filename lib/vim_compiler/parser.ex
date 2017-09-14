@@ -21,10 +21,15 @@ defmodule VimCompiler.Parser do
     end
   end
 
+  @doc """
+    parses
+
+        (?< defp?) name DefinitionBody
+  """
   def parse_definition(deftype, [{:name, _, name}|rest], result_tree) do
     with {:ok, param_patterns, rest1} <- parse_param_patterns(skip_ws(rest), []) do
       # looking at kw_do or sy_assigns here:
-       with {:ok, code, rest2} <- parse_definition_body(rest1,[]) do
+       with {:ok, code, rest2} <- parse_definition_body(rest1) do
          {:ok, Ast.Tree.add_definition(result_tree, name, deftype == "defp", param_patterns, code), rest2}
        end
     end
@@ -33,10 +38,26 @@ defmodule VimCompiler.Parser do
     {:error, "Illegal name after #{deftype}", tokens}
   end
 
-  def parse_definition_body([{:sy_assigns,_,_}|body], _), do: parse_expression(body)
-  def parse_definition_body([{:kw_end,_,_}|rest], result), do: {:ok, Enum.reverse(result), rest}
-  def parse_definition_body([{:kw_do,_,_}|body], result) do
+  @doc """
+
+    parses
+
+        = Expression
+
+    or
+
+        do
+          (Assignment)*   (or +, not sure yet)
+        end
+  """
+  def parse_definition_body([{:sy_assigns,_,_}|body]), do: parse_expression(body)
+  def parse_definition_body([{:kw_do,_,_}|body]), do: parse_multi_definition_body(skip_ws(body), [])
+
+  def parse_multi_definition_body(tokens, result) do
+    with {:ok, body, rest} <- parse_assignment(tokens), do: parse_multi_definition_body(rest, [body|result])
   end
+  def parse_multi_definition_body([{:kw_end,_,_}|rest], result), do: {:ok, Enum.reverse(result), rest}
+  def parse_multi_definition_body([], result), do: {:error, "Missing kw end", result}
 
   @doc """
         (Pattern ("," Pattern)*)?
@@ -49,22 +70,56 @@ defmodule VimCompiler.Parser do
     with {:ok, pattern, rest} <- parse_pattern(tokens), do: parse_param_patterns(skip_ws(rest), [pattern|result])
   end
 
+  @doc """
+       Name = Expression | => AssignmentPrime
+       Expression
+  """
+  def parse_assignment(tokens = [{:name, _, name} | tokens1]) do
+    case parse_assignment_prime(name, skip_ws(tokens1)) do
+      {:ok, _, _ } = t -> t
+      :backtrace       -> parse_expression(tokens)
+    end
+  end
+  def parse_assignment(tokens), do: parse_expression(tokens)
+
+  defp parse_assignment_prime(name, [{:sy_assigns, _, _} | tokens]) do
+    with {:ok, expression, rest} <- parse_expression(skip_ws(tokens)) do
+      {:ok, %Ast.Assignment{name: name, value: expression}, rest}
+    end
+  end
+  defp parse_assignment_prime(_, _), do: :backtrace
+
+
+  @doc """
+  parses:
+
+    Expression ::=
+        name op6 Term   | \
+        name op9 Factor |  => ExpressionWithName
+        name Params     | /
+        name            |
+        Term; 
+  """
   def parse_expression([]) do
     { :ok, %Ast.EOF{}, [] }
   end
-  def parse_expression([{:name, _, name}]) do
-    {:ok, %Ast.Invocation{fn: name}, []}
-  end
-  def parse_expression(ts=[{:name, _, _} | [ t1 | rest]]) do
-    parse_expression_prime(t1, ts)
-  end
+  def parse_expression([{:name, _, name}]), do: %Ast.Name{text: name}
+  def parse_expression([{:name, _, name}|rest]), do: parse_expression_with_name(name, skip_ws(rest))
   def parse_expression(tokens), do: parse_term(skip_ws(tokens))
 
-  def parse_expression_prime({:op6,_,_}, tokens), do: parse_term(skip_ws(tokens))
-  def parse_expression_prime({:op9,_,_}, tokens), do: parse_factor(skip_ws(tokens))
-  def parse_expression_prime(_, [{:name, _, name} | rest]) do
-    with {:ok, params, rest1} <- parse_params(skip_ws(rest), []) do
-      {:ok, %Ast.Invocation{fn: name, params: params}, rest1}
+  defp parse_expression_with_name(name, [{op6, _, op}|tokens]) do 
+    with {:ok, rhs, rest} <- parse_term(skip_ws(tokens)) do
+      {:ok, %Ast.Term{lhs: %Ast.Name{text: name}, op: String.to_atom(op), rhs: rhs}, rest}
+    end
+  end
+  defp parse_expression_with_name(name, [{op9, _, op}|tokens]) do 
+    with {:ok, rhs, rest} <- parse_factor(skip_ws(tokens)) do
+      {:ok, %Ast.Factor{lhs: %Ast.Name{text: name}, op: String.to_atom(op), rhs: rhs}, rest}
+    end
+  end
+  defp parse_expression_with_name(name, tokens) do
+    with {:ok, params, rest} <- parse_params(skip_ws(tokens), []) do
+      {:ok, %Ast.Invocation{fn: name, params: params}, rest}
     end
   end
 

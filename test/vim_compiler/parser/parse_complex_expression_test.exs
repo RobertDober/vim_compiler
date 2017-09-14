@@ -45,14 +45,26 @@ defmodule VimCompiler.Helpers.Parser.ParseComplexExpressionTest do
     """
     test "complex" do
       {:ok,
-        %VimCompiler.Ast.Invocation{fn: "f",
+        %Ast.Invocation{fn: "f",
            params: params}, []} = parse(@complex)
 
       [
-        %VimCompiler.Ast.Term{lhs: %VimCompiler.Ast.Number{value: 1}, op: :+,
-                              rhs: %VimCompiler.Ast.Factor{lhs: %VimCompiler.Ast.Number{value: 2}, op: :*,
-                                                           rhs: %VimCompiler.Ast.Number{value: 3}}},
-        %VimCompiler.Ast.Name{text: "g"}] = params
+        %Ast.Term{lhs: %Ast.Number{value: 1}, op: :+,
+                              rhs: %Ast.Factor{lhs: %Ast.Number{value: 2}, op: :*,
+                                                           rhs: %Ast.Number{value: 3}}},
+        %Ast.Name{text: "g"}] = params
+    end
+  end
+
+  describe "Invocation and Operators" do
+    @term """
+      x + y
+    """
+    test "term" do 
+      {:ok, %Ast.Term{lhs: lhs, rhs: rhs, op: :+}, []} = parse(@term)
+      assert lhs == %Ast.Name{text: "x"}
+      assert rhs == %Ast.Name{text: "y"}
+      
     end
   end
 
